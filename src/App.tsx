@@ -4,8 +4,10 @@ function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <div className='text-lg'>
-      Hello
+    <div className='text-lg font-bold'>
+      Hello {count}
+
+      <button onClick={ () => setCount(count + 1) }>ADD</button>
     </div>
   )
 }
