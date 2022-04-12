@@ -1,4 +1,15 @@
 import { useState } from 'react'
+
+/*
+ * TODO:
+  * 1. 游戏初始化可配置 √
+  * 2. 支持蔓延打开空白格子 √
+  * 3. 支持标记 √
+  * 4. 实时显示剩余炸弹数量
+  * 4. 自动判定Win
+  * 5. 支持双击数字打开周围格子（可双击判断：标记数量 >= 数字）
+  * 6. UI优化
+*/
 interface Block {
   isMine: boolean;
   isOpen: boolean;
@@ -94,31 +105,33 @@ function App() {
    * @param {Block} cell
    * @return {*} 
    */
-  function openAround(cell: Block) {
-    if (cell.isMine) {
+  function openAround(row: number, col: number) {
+    if (row < 0 || row >= mineMap.length || col < 0 || col >= mineMap[row].length) return;
+    const cell = mineTable[row][col];
+    if (!cell || cell.isMine || cell.isFlag || cell.isOpen) {
       return;
     }
-    if (cell.isOpen) {
-      return;
-    }
-    if (cell.isFlag) {
-      return;
-    }
-    if (cell.silbingMines > 0) {
-      return;
-    }
+    cell.isOpen = true;
     if (cell.silbingMines === 0) {
-      // TODO: 打开四周格子
-      // openAround(cell);
+      openAround(row-1, col-1);
+      openAround(row-1, col);
+      openAround(row-1, col+1);
+      
+      openAround(row, col-1);
+      openAround(row, col);
+      openAround(row, col+1);
+
+      openAround(row+1, col-1);
+      openAround(row+1, col);
+      openAround(row+1, col+1);
     }
   }
 
   // 挑战失败，全部打开
   function handleLose() {
-    // alert('You lost')
     mineTable.forEach(row => row.forEach(cell => cell.isOpen = true));
     setMineTable([...mineTable]);
-    // TODO: 禁用点击
+    // alert('You lost')
   }
   
   /**
@@ -140,14 +153,13 @@ function App() {
     }
     if (cell.silbingMines > 0) {
       mineTable[row][col].isOpen = true;
-      setMineTable(mineTable);
+      setMineTable([...mineTable]);
       // return;
     }
     if (cell.silbingMines === 0) {
-      openAround(cell);
+      openAround(row, col);
+      setMineTable([...mineTable]);
     }
-    mineTable[row][col].isOpen = true;
-    setMineTable([...mineTable]);
   }
   
   function handleRightClick(cell: Block, row: number, col: number) {
@@ -170,7 +182,7 @@ function App() {
           {row.map((cell, j) => {
             return (
               <div
-                className="cell inline-block border border-gray-100 w-8 h-8"
+                className="cell mr-1 mb-1 inline-block border border-gray-100 w-8 h-8"
                 key={j}
                 onClick={() => handleClick(cell, i, j)}
                 onContextMenu={(e) => {
@@ -189,8 +201,8 @@ function App() {
                     cell.isFlag ? (
                       <div>🚩</div>
                     ) : (
-                      // TODO: 显示遮罩
-                      <div>{cell.isMine ? '💣' : cell.silbingMines}</div>
+                      // <div>{cell.isMine ? '💣' : cell.silbingMines}</div>
+                      <div className="cell bg-gray-100 text-black">&nbsp;</div>
                     )
                   )
                 }
