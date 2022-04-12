@@ -5,7 +5,7 @@ import { useState } from 'react'
   * 1. 游戏初始化可配置 √
   * 2. 支持蔓延打开空白格子 √
   * 3. 支持标记 √
-  * 4. 实时显示剩余炸弹数量
+  * 4. 实时显示剩余炸弹数量 √
   * 4. 自动判定Win
   * 5. 支持双击数字打开周围格子（可双击判断：标记数量 >= 数字）
   * 6. UI优化
@@ -21,7 +21,10 @@ type GameConfig = {
   rows: number;
   cols: number;
   minse: number;
+  /** 剩余炸弹数量 */
+  waitMines: number;
   finished: boolean;
+  generated: boolean;
 }
 
 function generateMines(rows = 5, cols = 5, mines = 3) {
@@ -163,15 +166,17 @@ function App() {
   }
   
   function handleRightClick(cell: Block, row: number, col: number) {
-
     if (cell.isOpen) {
       return;
     }
     if (cell.isFlag) {
       mineTable[row][col].isFlag = false;
+      gameState.waitMines++;
     } else {
       mineTable[row][col].isFlag = true;
+      gameState.waitMines--;
     }
+    setGameState({...gameState})
     setMineTable([...mineTable]);
   }
   
@@ -219,31 +224,37 @@ function App() {
     rows: 2,
     cols: 2,
     minse: 1,
+    waitMines: 1,
+    generated: false,
     finished: false
   })
   // 重置
   function reset () {
     init(gameState);
     setMineTable(mineMap);
+    setGameState({...gameState, generated: true, waitMines: gameState.minse});
   }
 
   
   return (
-    <div className='text-lg font-bold h-screen bg-gray-800 text-gray-400'>
-      <div>
+    <div className='text-lg font-bold h-screen bg-gray-800 text-gray-400 flex flex-col items-center pt-10'>
+      <div className='mb-6'>
         行*列：<input type="number" maxLength={2} value={gameState.cols} onChange={e => {
           setGameState({...gameState, rows: Number(e.target.value), cols: Number(e.target.value)})
         }} />
         <br />
         炸弹数量：<input type="number" maxLength={2} value={gameState.minse} onChange={e => {
-          setGameState({...gameState, minse: Number(e.target.value)})
+          setGameState({...gameState, minse: Number(e.target.value), waitMines: Number(e.target.value)})
         }} />
         <br />
-        <button onClick={reset}>reset</button>
+        <button className='border px-4 mt-4' onClick={reset}>初始化</button>
       </div>
       <div>
         {renderMines(mineTable)}
       </div>
+      {gameState.generated ? <div>
+        炸弹剩余数量：{gameState.waitMines}
+      </div> : null}
     </div>
   )
 }
