@@ -1,16 +1,5 @@
 import { useState } from 'react'
 
-/*
- * TODO:
-  * 1. 游戏初始化可配置 √
-  * 2. 支持蔓延打开空白格子 √
-  * 3. 支持标记 √
-  * 4. 实时显示剩余炸弹数量 √
-  * 4. 自动判定Win
-  * 5. 支持双击数字打开周围格子（可双击判断：标记数量 >= 数字）
-  * 6. UI优化
-*/
-
 /**
  * 生成格子数据&标记炸弹
  *
@@ -19,8 +8,8 @@ import { useState } from 'react'
  * @param {number} [mines=3]
  * @return {*} 
  */
-function generateMines(rows = 5, cols = 5, mines = 3) {
-  const mineMap: Block[][] = new Array(rows);
+function generateMines(rows = 5, cols = 5, mines = 3): MinesTable {
+  const mineMap: MinesTable = new Array(rows);
   for (let i = 0; i < rows; i++) {
     mineMap[i] = new Array(cols)
     for (let j = 0; j < cols; j++) {
@@ -46,14 +35,12 @@ function generateMines(rows = 5, cols = 5, mines = 3) {
 
 /**
  * 统计周围满足条件的格子数量
- * 
- * @param row 
- * @param col 
- * @param table 
- * @param filter 
- * @returns 
+ *
+ * @param {CellHandlerParamsTube} tube
+ * @param {(cell: Block) => boolean} filter
+ * @return {*}  {number}
  */
-function countAroundCell (tube: CellHandlerParamsTube, filter: (cell: Block) => boolean) {
+function countAroundCell (tube: CellHandlerParamsTube, filter: (cell: Block) => boolean): number {
   const [row, col, table] = tube;
   let count = 0;
   for (let offsetR = -1; offsetR < 2; offsetR++) {
@@ -71,14 +58,12 @@ function countAroundCell (tube: CellHandlerParamsTube, filter: (cell: Block) => 
 
 /**
  * 修改四周格子状态
- * 
- * @param row 
- * @param col 
- * @param table 
- * @param filter 
- * @returns 
+ *
+ * @param {CellHandlerParamsTube} tube
+ * @param {(cell: CellHandlerParamsTube) => void} filter
+ * @return {*}  {MinesTable}
  */
-function setAroundCellEffect (tube: CellHandlerParamsTube, filter: (cell: CellHandlerParamsTube) => void) {
+function setAroundCellEffect (tube: CellHandlerParamsTube, filter: (cell: CellHandlerParamsTube) => void): MinesTable {
   const [row, col, table] = tube;
   for (let offsetR = -1; offsetR < 2; offsetR++) {
     // 越界:跳过
@@ -96,31 +81,32 @@ function setAroundCellEffect (tube: CellHandlerParamsTube, filter: (cell: CellHa
 /**
  * 计算四周的炸弹数量
  *
- * @param {number} row
- * @param {number} col
+ * @param {CellHandlerParamsTube} tube
  * @return {*} 
  */
-function computedAroundMines([...CellHandlerParamsTube]) {
-  const [row, col, table] = CellHandlerParamsTube;
-  let mines = 0;
-  mines = countAroundCell([row, col, table], (cell: Block) => cell.isMine);
+function computedAroundMines(tube: CellHandlerParamsTube): number {
+  const [row, col, table] = tube;
+  let mines = countAroundCell([row, col, table], (cell: Block) => cell.isMine);
   return mines;
 }
 
-let mineMap: Block[][] = [];
+
+let mineMap: MinesTable = [];
 
 /**
  * 计算安全格子内的数值
  *
  * @param {GameConfig} config
+ * @param {MinesTable} table
  */
-function getPlainCellMinseNumber (config: GameConfig) {
+function getPlainCellMinseNumberEffect (config: GameConfig, table: MinesTable) {
   for (let i = 0; i < config.rows; i++) {
     for (let j = 0; j < config.cols; j++) {
-      mineMap[i][j].silbingMines = computedAroundMines([i, j, mineMap]);
+      table[i][j].silbingMines = computedAroundMines([i, j, table]);
     }
   }
 }
+
 /**
  * 初始化
  *
@@ -128,7 +114,7 @@ function getPlainCellMinseNumber (config: GameConfig) {
  */
 function init (config: GameConfig) {
   mineMap = generateMines(config.rows, config.cols, config.mines);
-  getPlainCellMinseNumber(config);
+  getPlainCellMinseNumberEffect(config, mineMap);
 }
 
 function App() {
@@ -144,9 +130,14 @@ function App() {
     finished: false
   })
 
+  /**
+   * 状态提示
+   */
   const [resultText, setResultText] = useState<string>('👆👆👆点击开始boom boom boom👆👆👆');
 
-  // Cell 状态
+  /**
+   * Cell状态
+   */
   const [mineTable, setMineTable] = useState(mineMap);
 
   /**
@@ -164,10 +155,11 @@ function App() {
   /**
    * 打开四周的安全格子
    *
-   * @param {Block} cell
-   * @return {*} 
+   * @param {number} row
+   * @param {number} col
+   * @return {*}  {void}
    */
-  function openAround(row: number, col: number) {
+  function openAround(row: number, col: number): void {
     if (row < 0 || row >= mineTable.length || col < 0 || col >= mineTable[row].length) return;
     const cell = mineTable[row][col];
     if (!cell || cell.isMine || cell.isFlag || cell.isOpen) {
@@ -213,11 +205,9 @@ function App() {
   }
   
   /**
-   * 开启格子
+   * 处理格子单击事件
    *
-   * @param {Block} cell
-   * @param {number} row
-   * @param {number} col
+   * @param {CellHandlerParamsTube} tube
    * @return {*} 
    */
   function handleClick(tube: CellHandlerParamsTube) {
@@ -248,9 +238,7 @@ function App() {
   /**
    * 右键标记
    *
-   * @param {Block} cell
-   * @param {number} row
-   * @param {number} col
+   * @param {CellHandlerParamsTube} tube
    * @return {*} 
    */
   function handleRightClick(tube: CellHandlerParamsTube) {
@@ -275,9 +263,7 @@ function App() {
   /**
    * 双击打开满足条件的格子
    *
-   * @param {Block} cell
-   * @param {number} row
-   * @param {number} col
+   * @param {CellHandlerParamsTube} tube
    * @return {*} 
    */
   function handleDoubleClick(tube: CellHandlerParamsTube) {
@@ -316,10 +302,10 @@ function App() {
   /**
    * 渲染所有格子
    *
-   * @param {Block[][]} mineTable
+   * @param {MinesTable} mineTable
    * @return {*} 
    */
-   const renderMines = (mineTable: Block[][]) => {
+   const renderMines = (mineTable: MinesTable) => {
     return mineTable.map((row, i) => {
       return (
         <div className="row" key={i}>
@@ -358,6 +344,9 @@ function App() {
     })
   }
 
+  /**
+   * 状态栏组件
+   */
   const Result = () => {
     return (
       <div className='mt-4'>
