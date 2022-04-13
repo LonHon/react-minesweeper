@@ -10,28 +10,6 @@ import { useState } from 'react'
   * 5. 支持双击数字打开周围格子（可双击判断：标记数量 >= 数字）
   * 6. UI优化
 */
-interface Block {
-  isMine: boolean;
-  isOpen: boolean;
-  isFlag: boolean;
-  silbingMines: number;
-}
-
-type GameConfig = {
-  rows: number;
-  cols: number;
-  opens: number;
-  /** 已开格子数量 */
-  mines: number;
-  /** 待标记炸弹数量 */
-  unFlagMines: number;
-  /** 已结束 */
-  finished: boolean;
-  /** 已初始化 */
-  generated: boolean;
-}
-
-type CellHandlerParamsTube = [number, number, Block[][]];
 
 /**
  * 生成格子数据&标记炸弹
