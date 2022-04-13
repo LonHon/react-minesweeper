@@ -5,6 +5,25 @@
   --cellsize: 40px;
 }
 
+.ghost-input{
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  outline-offset: 0px;
+  width: 120px;
+  text-align: center;
+}
+.ghost-input:focus{
+  color: white;
+}
+
+.game-rect{
+  user-select: none;
+}
+.game-rect.game-disable{
+  pointer-events: none;
+}
+
 .cell{
   width: var(--cellsize);
   height: var(--cellsize);
@@ -15,4 +34,17 @@
 .cell > div {
   width: var(--cellsize);
   height: var(--cellsize);
+}
+
+.hand{
+  cursor: pointer;
+}
+
+.unpack-cell{
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.unpack-cell:hover{
+  opacity: 0.9;
 }

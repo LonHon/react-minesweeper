@@ -165,7 +165,7 @@ function App() {
    * @return {*} 
    */
   function openAround(row: number, col: number) {
-    if (row < 0 || row >= mineMap.length || col < 0 || col >= mineMap[row].length) return;
+    if (row < 0 || row >= mineTable.length || col < 0 || col >= mineTable[row].length) return;
     const cell = mineTable[row][col];
     if (!cell || cell.isMine || cell.isFlag || cell.isOpen) {
       return;
@@ -297,7 +297,7 @@ function App() {
           {row.map((cell, j) => {
             return (
               <div
-                className="cell mr-1 mb-1 inline-block border border-gray-100 w-8 h-8 text-center"
+                className="cell mr-1 mb-1 inline-block border border-gray-300 w-8 h-8 text-center"
                 key={j}
                 onClick={() => handleClick(cell, i, j)}
                 onContextMenu={(e) => {
@@ -310,14 +310,13 @@ function App() {
                     cell.isMine ? (
                       <div className="mine">🎇</div>
                     ) : (
-                      <div className="text-green-200">{cell.silbingMines}</div>
+                      <div className="text-green-500">{cell.silbingMines}</div>
                     )
                   ) : (
                     cell.isFlag ? (
-                      <div className="bg-gray-100 text-black">🚩</div>
+                      <div className="bg-gray-100">🚩</div>
                     ) : (
-                      // <div>{cell.isMine ? '💣' : cell.silbingMines}</div>
-                      <div className="bg-gray-100 text-black">&nbsp;</div>
+                      <div className="unpack-cell bg-gray-100">&nbsp;</div>
                     )
                   )
                 }
@@ -341,19 +340,21 @@ function App() {
   return (
     <div className='text-lg font-bold h-screen bg-gray-800 text-gray-400 flex flex-col items-center pt-10'>
       <div className='mb-6'>
-        行 * 列：<input type="number" maxLength={2} value={gameState.cols} onChange={e => {
-          setGameState({...gameState, rows: Number(e.target.value), cols: Number(e.target.value)})
-        }} />
-        <br />
-        炸弹数量：<input type="number" maxLength={2} value={gameState.mines} onChange={e => {
-          setGameState({...gameState, mines: Number(e.target.value), unFlagMines: Number(e.target.value)})
-        }} />
-        <br />
+        <div>
+          行列数量：<input type="number" className='ghost-input' step="1" min="0" max="50" value={gameState.cols} onChange={e => {
+            setGameState({...gameState, rows: Number(e.target.value), cols: Number(e.target.value)})
+          }} />
+        </div>
+        <div className='mt-2'>
+          炸弹数量：<input type="number" className='ghost-input' step="1" min="1" max="100" value={gameState.mines} onChange={e => {
+            setGameState({...gameState, mines: Number(e.target.value), unFlagMines: Number(e.target.value)})
+          }} />
+        </div>
         <div className='text-center'>
           <button className='border-2 border-green-400 text-green-500 rounded-lg px-4 mt-4' onClick={reset}>开始游戏</button>
         </div>
       </div>
-      <div>
+      <div className={(gameState.finished ? 'game-disable' : '') + ' game-rect'}>
         {renderMines(mineTable)}
       </div>
       <Result />
