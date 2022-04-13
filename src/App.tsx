@@ -27,6 +27,14 @@ type GameConfig = {
   generated: boolean;
 }
 
+/**
+ * 生成格子数据&标记炸弹
+ *
+ * @param {number} [rows=5]
+ * @param {number} [cols=5]
+ * @param {number} [mines=3]
+ * @return {*} 
+ */
 function generateMines(rows = 5, cols = 5, mines = 3) {
   const mineMap: Block[][] = new Array(rows);
   for (let i = 0; i < rows; i++) {
@@ -52,8 +60,14 @@ function generateMines(rows = 5, cols = 5, mines = 3) {
   return mineMap;
 }
 
-
-function computedMines(row: number, col: number) {
+/**
+ * 计算四周的炸弹数量
+ *
+ * @param {number} row
+ * @param {number} col
+ * @return {*} 
+ */
+function computedAroundMines(row: number, col: number) {
   let mines = 0;
   if (row > 0) {
     if (mineMap[row - 1][col].isMine) {
@@ -86,15 +100,25 @@ function computedMines(row: number, col: number) {
   return mines;
 }
 
+/**
+ * 计算安全格子内的数值
+ *
+ * @param {GameConfig} config
+ */
 function getPlainCellMinseNumber (config: GameConfig) {
   for (let i = 0; i < config.rows; i++) {
     for (let j = 0; j < config.cols; j++) {
-      mineMap[i][j].silbingMines = computedMines(i, j);
+      mineMap[i][j].silbingMines = computedAroundMines(i, j);
     }
   }
 }
 
 let mineMap: Block[][] = [];
+/**
+ * 初始化
+ *
+ * @param {GameConfig} config
+ */
 function init (config: GameConfig) {
   mineMap = generateMines(config.rows, config.cols, config.minse);
   getPlainCellMinseNumber(config);
@@ -102,8 +126,9 @@ function init (config: GameConfig) {
 
 function App() {
   const [mineTable, setMineTable] = useState(mineMap);
+
   /**
-   * 打开周围的空白格
+   * 打开四周的安全格子
    *
    * @param {Block} cell
    * @return {*} 
@@ -130,7 +155,10 @@ function App() {
     }
   }
 
-  // 挑战失败，全部打开
+  /**
+   * 挑战失败，全部打开
+   *
+   */
   function handleLose() {
     mineTable.forEach(row => row.forEach(cell => cell.isOpen = true));
     setMineTable([...mineTable]);
@@ -138,9 +166,11 @@ function App() {
   }
   
   /**
-   * 打开格子
+   * 开启格子
    *
    * @param {Block} cell
+   * @param {number} row
+   * @param {number} col
    * @return {*} 
    */
   function handleClick(cell: Block, row: number, col: number) {
@@ -165,6 +195,14 @@ function App() {
     }
   }
   
+  /**
+   * 右键标记
+   *
+   * @param {Block} cell
+   * @param {number} row
+   * @param {number} col
+   * @return {*} 
+   */
   function handleRightClick(cell: Block, row: number, col: number) {
     if (cell.isOpen) {
       return;
@@ -180,6 +218,12 @@ function App() {
     setMineTable([...mineTable]);
   }
   
+  /**
+   * 渲染所有格子
+   *
+   * @param {Block[][]} mineMap
+   * @return {*} 
+   */
   function renderMines(mineMap: Block[][]) {
     return mineMap.map((row, i) => {
       return (
@@ -207,7 +251,7 @@ function App() {
                       <div>🚩</div>
                     ) : (
                       // <div>{cell.isMine ? '💣' : cell.silbingMines}</div>
-                      <div className="cell bg-gray-100 text-black">&nbsp;</div>
+                      <div className="bg-gray-100 text-black">&nbsp;</div>
                     )
                   )
                 }
@@ -219,16 +263,20 @@ function App() {
     })
   }
 
-  // Game 操作
+  // Game 状态
   const [gameState, setGameState] = useState<GameConfig>({
-    rows: 2,
-    cols: 2,
-    minse: 1,
-    waitMines: 1,
+    rows: 5,
+    cols: 5,
+    minse: 5,
+    waitMines: 5,
     generated: false,
     finished: false
   })
-  // 重置
+  
+  /**
+   * 重置游戏
+   *
+   */
   function reset () {
     init(gameState);
     setMineTable(mineMap);
