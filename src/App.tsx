@@ -20,10 +20,14 @@ interface Block {
 type GameConfig = {
   rows: number;
   cols: number;
-  minse: number;
-  /** 剩余炸弹数量 */
-  waitMines: number;
+  opens: number;
+  /** 已开格子数量 */
+  mines: number;
+  /** 待标记炸弹数量 */
+  unFlagMines: number;
+  /** 已结束 */
   finished: boolean;
+  /** 已初始化 */
   generated: boolean;
 }
 
@@ -120,12 +124,39 @@ let mineMap: Block[][] = [];
  * @param {GameConfig} config
  */
 function init (config: GameConfig) {
-  mineMap = generateMines(config.rows, config.cols, config.minse);
+  mineMap = generateMines(config.rows, config.cols, config.mines);
   getPlainCellMinseNumber(config);
 }
 
 function App() {
+  
+  // Game 状态
+  const [gameState, setGameState] = useState<GameConfig>({
+    rows: 5,
+    cols: 5,
+    mines: 4,
+    opens: 0,
+    unFlagMines: 5,
+    generated: false,
+    finished: false
+  })
+
+  const [resultText, setResultText] = useState<string>('👆👆👆点击开始boom boom boom👆👆👆');
+
+  // Cell 状态
   const [mineTable, setMineTable] = useState(mineMap);
+
+  /**
+   * 开启格子
+   *
+   * @param {number} row
+   * @param {number} col
+   */
+  function setCellOpen(row: number, col: number) {
+    mineTable[row][col].isOpen = true;
+    // 计数
+    gameState.opens++;
+  }
 
   /**
    * 打开四周的安全格子
@@ -139,7 +170,7 @@ function App() {
     if (!cell || cell.isMine || cell.isFlag || cell.isOpen) {
       return;
     }
-    cell.isOpen = true;
+    setCellOpen(row, col);
     if (cell.silbingMines === 0) {
       openAround(row-1, col-1);
       openAround(row-1, col);
@@ -162,7 +193,20 @@ function App() {
   function handleLose() {
     mineTable.forEach(row => row.forEach(cell => cell.isOpen = true));
     setMineTable([...mineTable]);
+    setResultText('😭😭😭你输了，点击开始重新挑战😭😭😭');
     // alert('You lost')
+  }
+
+  /**
+   * 判定是否赢得胜利
+   *
+   */
+  function isWin() {
+    const { rows, cols, opens, mines } = gameState;
+    if (opens + mines === rows * cols) {
+      setResultText('🎉🎉🎉 You win 🎉🎉🎉');
+      setGameState({...gameState, finished: true});
+    }
   }
   
   /**
@@ -185,7 +229,7 @@ function App() {
       return;
     }
     if (cell.silbingMines > 0) {
-      mineTable[row][col].isOpen = true;
+      setCellOpen(row, col);
       setMineTable([...mineTable]);
       // return;
     }
@@ -193,6 +237,7 @@ function App() {
       openAround(row, col);
       setMineTable([...mineTable]);
     }
+    isWin();
   }
   
   /**
@@ -209,14 +254,35 @@ function App() {
     }
     if (cell.isFlag) {
       mineTable[row][col].isFlag = false;
-      gameState.waitMines++;
+      gameState.unFlagMines++;
     } else {
       mineTable[row][col].isFlag = true;
-      gameState.waitMines--;
+      gameState.unFlagMines--;
     }
     setGameState({...gameState})
     setMineTable([...mineTable]);
+    setResultText('剩余炸弹数量：' + gameState.unFlagMines);
   }
+  
+  
+  /**
+   * 重置游戏
+   *
+   */
+  function reset () {
+    init(gameState);
+    setMineTable(mineMap);
+    setGameState({
+      ...gameState,
+      generated: true,
+      unFlagMines: gameState.mines,
+      opens: 0,
+      finished: false
+    });
+    setResultText('剩余炸弹数量：' + gameState.mines);
+    // setResultText('剩余炸弹数量：' + gameState.unFlagMines); // unFlagMines由于setGameState异步，导致此处会拿到旧值，所以改为直接赋值mines
+  }
+
   
   /**
    * 渲染所有格子
@@ -224,14 +290,14 @@ function App() {
    * @param {Block[][]} mineMap
    * @return {*} 
    */
-  function renderMines(mineMap: Block[][]) {
+   const renderMines = (mineMap: Block[][]) => {
     return mineMap.map((row, i) => {
       return (
         <div className="row" key={i}>
           {row.map((cell, j) => {
             return (
               <div
-                className="cell mr-1 mb-1 inline-block border border-gray-100 w-8 h-8"
+                className="cell mr-1 mb-1 inline-block border border-gray-100 w-8 h-8 text-center"
                 key={j}
                 onClick={() => handleClick(cell, i, j)}
                 onContextMenu={(e) => {
@@ -248,7 +314,7 @@ function App() {
                     )
                   ) : (
                     cell.isFlag ? (
-                      <div>🚩</div>
+                      <div className="bg-gray-100 text-black">🚩</div>
                     ) : (
                       // <div>{cell.isMine ? '💣' : cell.silbingMines}</div>
                       <div className="bg-gray-100 text-black">&nbsp;</div>
@@ -263,46 +329,34 @@ function App() {
     })
   }
 
-  // Game 状态
-  const [gameState, setGameState] = useState<GameConfig>({
-    rows: 5,
-    cols: 5,
-    minse: 5,
-    waitMines: 5,
-    generated: false,
-    finished: false
-  })
-  
-  /**
-   * 重置游戏
-   *
-   */
-  function reset () {
-    init(gameState);
-    setMineTable(mineMap);
-    setGameState({...gameState, generated: true, waitMines: gameState.minse});
+  const Result = () => {
+    return (
+      <div className='mt-4'>
+        <div className="text-center">{resultText}</div>
+      </div>
+    )
   }
 
   
   return (
     <div className='text-lg font-bold h-screen bg-gray-800 text-gray-400 flex flex-col items-center pt-10'>
       <div className='mb-6'>
-        行*列：<input type="number" maxLength={2} value={gameState.cols} onChange={e => {
+        行 * 列：<input type="number" maxLength={2} value={gameState.cols} onChange={e => {
           setGameState({...gameState, rows: Number(e.target.value), cols: Number(e.target.value)})
         }} />
         <br />
-        炸弹数量：<input type="number" maxLength={2} value={gameState.minse} onChange={e => {
-          setGameState({...gameState, minse: Number(e.target.value), waitMines: Number(e.target.value)})
+        炸弹数量：<input type="number" maxLength={2} value={gameState.mines} onChange={e => {
+          setGameState({...gameState, mines: Number(e.target.value), unFlagMines: Number(e.target.value)})
         }} />
         <br />
-        <button className='border px-4 mt-4' onClick={reset}>初始化</button>
+        <div className='text-center'>
+          <button className='border-2 border-green-400 text-green-500 rounded-lg px-4 mt-4' onClick={reset}>开始游戏</button>
+        </div>
       </div>
       <div>
         {renderMines(mineTable)}
       </div>
-      {gameState.generated ? <div>
-        炸弹剩余数量：{gameState.waitMines}
-      </div> : null}
+      <Result />
     </div>
   )
 }
