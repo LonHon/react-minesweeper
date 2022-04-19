@@ -19,9 +19,9 @@ function App() {
   
   // Game 状态
   const [gameState, setGameState] = useState<GameConfig>({
-    rows: 5,
-    cols: 5,
-    mines: 4,
+    rows: 7,
+    cols: 7,
+    mines: 8,
     opens: 0,
     unFlagMines: 5,
     generated: false,
